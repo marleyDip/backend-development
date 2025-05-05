@@ -1,5 +1,6 @@
 let express = require("express");
-const { checkToken } = require("./checkTokenMiddleware");
+const { checkToken } = require("./Middleware/checkTokenMiddleware");
+const { checkPass } = require("./Middleware/checkPassMiddleware");
 
 let app = express();
 app.use(express.json()); // Middleware to parse JSON bodies
@@ -9,25 +10,7 @@ let myPass = "12345"; // Example token for validation
 
 //app.use(checkToken); // Use the middleware for all routes
 
-/* app.use((req, res, next) => {
-  if (req.query.pass === "" || req.query.pass === undefined) {
-    return res.send({
-      status: 0,
-      msg: "Pass is required",
-    });
-  }
-
-  if (req.query.pass != myPass) {
-    return res.send({
-      status: 0,
-      msg: "Pass is invalid",
-    });
-  }
-
-  next();
-}); // Middleware to log request details
- */
-app.get("/", (req, res) => {
+app.get("/", checkPass, (req, res) => {
   res.send({ status: 1, msg: "Home Page API" });
 });
 
