@@ -1,5 +1,6 @@
 let express = require("express");
 const { dbConnection } = require("./dbConnection");
+const { ObjectId } = require("mongodb");
 
 require("dotenv").config(); // Load environment variables from .env file
 
@@ -43,14 +44,10 @@ app.post("/student-insert", async (req, res) => {
 
   if (existingStudent) {
     return res.status(400).send({
-      status: "error",
-      message: "Student with this email already exists",
-    }); // If the student exists, send an error response
+      status: "fail",
+      message: "A student with this email already exists.",
+    });
   }
-  // If the student does not exist, proceed with the insertion
-  //console.log(req.body); // Log the request body to the console
-  //console.log(sName); // Log the sName to the console
-  //console.log(sEmail); // Log the sEmail to the console
 
   //console.log(obj); // Log the object to the console
 
@@ -64,6 +61,62 @@ app.post("/student-insert", async (req, res) => {
   res.status(201).send(resObj); // Send the response object back to the client
 
   //res.send("Student Insert API!");
+});
+
+app.delete("/student-delete/:id", async (req, res) => {
+  let { id } = req.params;
+
+  let myDB = await dbConnection();
+  let studentCollection = myDB.collection("students");
+  let delRes = await studentCollection.deleteOne({ _id: new ObjectId(id) }); // Delete the document with the specified ID
+
+  //console.log(delRes); // Log the result of the delete operation to the console
+
+  let resObj = {
+    status: 1,
+    message: "Student deleted successfully",
+    delete: delRes,
+  };
+
+  res.send(resObj);
+
+  //let paramsData = req.params; // Get the request parameters
+  //console.log(paramsData); // Log the parameters to the console
+});
+
+app.put("/student-update/:id", async (req, res) => {
+  let { id } = req.params;
+  let { sName, sEmail } = req.body; // Destructure the request body to get sName and sEmail
+  //let obj = { sName, sEmail }; // Create an object with the destructured values
+
+  let obj = {};
+  if (sName !== "" && sName !== undefined && sName !== null) {
+    obj["sName"] = sName; // Add sName to the object if it's not empty or undefined
+  }
+
+  if (sEmail !== "" && sEmail !== undefined && sEmail !== null) {
+    obj["sEmail"] = sEmail; // Add sName to the object if it's not empty or undefined
+  }
+
+  console.log(obj);
+
+  let myDB = await dbConnection();
+  let studentCollection = myDB.collection("students");
+  let updateRes = await studentCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: obj } // Update the document with the specified ID using the $set operator
+  );
+
+  let resObj = {
+    status: 1,
+    message: "Student Updated successfully",
+    updateData: updateRes,
+  };
+
+  res.send(resObj);
+
+  //let paramsData = req.params; // Get the request parameters
+  //console.log(paramsData); // Log the parameters to the console
 });
 
 app.listen(process.env.PORT || 5000);
