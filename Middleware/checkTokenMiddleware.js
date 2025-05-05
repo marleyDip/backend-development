@@ -1,4 +1,4 @@
-let myToken = "12345"; // Example token for validation
+//let myToken = "12345"; // Example token for validation
 
 let checkToken = (req, res, next) => {
   console.log(req.query.token); // Log the token from the query string
@@ -9,7 +9,7 @@ let checkToken = (req, res, next) => {
     });
   }
 
-  if (req.query.token != myToken) {
+  if (req.query.token != process.env.MyToken) {
     return res.send({
       status: 0,
       msg: "Token is invalid",

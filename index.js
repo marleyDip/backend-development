@@ -2,11 +2,13 @@ let express = require("express");
 const { checkToken } = require("./Middleware/checkTokenMiddleware");
 const { checkPass } = require("./Middleware/checkPassMiddleware");
 
-let app = express();
-app.use(express.json()); // Middleware to parse JSON bodies
+require("dotenv").config(); // Load environment variables from .env file
 
-let myToken = "12345"; // Example token for validation
-let myPass = "12345"; // Example token for validation
+let app = express();
+
+//console.log(process.env.MyToken); // Access the environment variable
+
+app.use(express.json()); // Middleware to parse JSON bodies
 
 //app.use(checkToken); // Use the middleware for all routes
 
@@ -46,4 +48,4 @@ app.post("/login", (req, res) => {
   }); */
 });
 
-app.listen("8000");
+app.listen(process.env.PORT || 5000);
