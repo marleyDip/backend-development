@@ -1,122 +1,97 @@
 let express = require("express");
-const { dbConnection } = require("./dbConnection");
-const { ObjectId } = require("mongodb");
-
+var mongoose = require("mongoose"); // Import mongoose for MongoDB object modeling
+const userEnquiryModel = require("./models/enquiry.model");
 require("dotenv").config(); // Load environment variables from .env file
 
 let app = express();
+app.use(express.json()); // Middleware to parse JSON request bodies
 
-app.use(express.json()); // Middleware to parse JSON bodies
+app.post("/api/enquiry-insert", async (req, res) => {
+  let { sName, sEmail, sPhone, sMessage } = req.body; // Destructure the request body to get enquiry details
+  //console.log(req.body); // Log the request body to the console
+  /* console.log(
+    "sName, sEmail, sPhone, sMessage:",
+    sName,
+    sEmail,
+    sPhone,
+    sMessage
+  ); */ // Log the individual enquiry details to the console
 
-app.get("/student-read", async (req, res) => {
-  let myDB = await dbConnection();
-  let studentCollection = myDB.collection("students");
+  let enquiry = new userEnquiryModel({
+    name: sName,
+    email: sEmail,
+    phone: sPhone,
+    message: sMessage,
+  });
 
-  let data = await studentCollection.find().toArray(); // Find all documents in the collection
-
-  let resObj = {
-    status: "success",
-    message: "Student List",
-    result: data,
-  };
-
-  res.send(resObj); // Send the response object back to the client
-
-  res.send("Hello from student-read API, route!");
-});
-
-app.post("/student-insert", async (req, res) => {
-  let myDB = await dbConnection(); // Await the database connection
-  let studentCollection = myDB.collection("students"); // Specify the collection to use
-
-  /* let obj = {
-    sName: req.body.sName,
-    sEmail: req.body.sEmail,
-  }; */
-
-  let { sName, sEmail } = req.body; // Destructure the request body to get sName and sEmail
-  let obj = { sName, sEmail }; // Create an object with the destructured values
-
-  // Check if a student with the same email already exists
-  let existingStudent = await studentCollection.findOne({ sEmail });
-
-  //console.log(existingStudent); // Log the existing student to the console
-
-  if (existingStudent) {
-    return res.status(400).send({
-      status: "fail",
-      message: "A student with this email already exists.",
+  enquiry
+    .save()
+    .then(() => {
+      res.status(201).send({
+        status: "success",
+        message: "Enquiry Inserted & Saved Successfully",
+      });
+    })
+    .catch((err) => {
+      res.status(500).send({
+        status: "error",
+        message: "Enquiry Not Inserted",
+        error: err,
+      });
     });
-  }
 
-  //console.log(obj); // Log the object to the console
+  //res.send("Enquiry Inserted"); // Send a response indicating the enquiry was inserted
+});
 
-  let insertRes = await studentCollection.insertOne(obj); // Insert the object into the collection
-  let resObj = {
+app.get("/api/enquiry-list", async (req, res) => {
+  // Fetch all enquiries from the database
+  let enquiryList = await userEnquiryModel.find(); // Find all documents in the userEnquiry collection
+  res
+    .status(200)
+    .json({ status: "success", message: "Enquiry List", data: enquiryList }); // data: [] => Send a response with an empty enquiry list
+});
+
+app.delete("/api/enquiry-delete/:id", async (req, res) => {
+  let enquiryId = req.params.id; // Get the enquiry ID from the request parameters
+
+  let deleteEnquiry = await userEnquiryModel.deleteOne({ _id: enquiryId });
+
+  res.status(200).json({
     status: "success",
-    message: "Student inserted successfully",
-    data: insertRes, // Include the result of the insert operation in the response
-  };
-
-  res.status(201).send(resObj); // Send the response object back to the client
-
-  //res.send("Student Insert API!");
+    message: "Enquiry Deleted Successfully",
+    id: enquiryId,
+    data: deleteEnquiry,
+  });
 });
 
-app.delete("/student-delete/:id", async (req, res) => {
-  let { id } = req.params;
-
-  let myDB = await dbConnection();
-  let studentCollection = myDB.collection("students");
-  let delRes = await studentCollection.deleteOne({ _id: new ObjectId(id) }); // Delete the document with the specified ID
-
-  //console.log(delRes); // Log the result of the delete operation to the console
-
-  let resObj = {
-    status: 1,
-    message: "Student deleted successfully",
-    delete: delRes,
+// update enquiry
+app.put("/api/enquiry-update/:id", async (req, res) => {
+  let enquiryId = req.params.id;
+  let { sName, sEmail, sPhone, sMessage } = req.body;
+  let updateObj = {
+    name: sName,
+    email: sEmail,
+    phone: sPhone,
+    message: sMessage,
   };
 
-  res.send(resObj);
-
-  //let paramsData = req.params; // Get the request parameters
-  //console.log(paramsData); // Log the parameters to the console
-});
-
-app.put("/student-update/:id", async (req, res) => {
-  let { id } = req.params;
-  let { sName, sEmail } = req.body; // Destructure the request body to get sName and sEmail
-  //let obj = { sName, sEmail }; // Create an object with the destructured values
-
-  let obj = {};
-  if (sName !== "" && sName !== undefined && sName !== null) {
-    obj["sName"] = sName; // Add sName to the object if it's not empty or undefined
-  }
-
-  if (sEmail !== "" && sEmail !== undefined && sEmail !== null) {
-    obj["sEmail"] = sEmail; // Add sName to the object if it's not empty or undefined
-  }
-
-  console.log(obj);
-
-  let myDB = await dbConnection();
-  let studentCollection = myDB.collection("students");
-  let updateRes = await studentCollection.updateOne(
-    { _id: new ObjectId(id) },
-    { $set: obj } // Update the document with the specified ID using the $set operator
+  let updateEnquiry = await userEnquiryModel.updateOne(
+    { _id: enquiryId },
+    updateObj
   );
 
-  let resObj = {
-    status: 1,
-    message: "Student Updated successfully",
-    updateData: updateRes,
-  };
-
-  res.send(resObj);
-
-  //let paramsData = req.params; // Get the request parameters
-  //console.log(paramsData); // Log the parameters to the console
+  res.send({
+    status: "success",
+    message: "Enquiry Updated Successfully",
+    id: enquiryId,
+    data: updateEnquiry,
+  });
 });
 
-app.listen(process.env.PORT || 5000);
+// connect to MongoDB using mongoose
+mongoose.connect(process.env.DBURL).then(() => {
+  console.log("Connected to MongoDB");
+  app.listen(process.env.PORT, () => {
+    console.log("Server is running on port " + process.env.PORT);
+  });
+});
